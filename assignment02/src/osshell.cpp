@@ -8,6 +8,14 @@
 #include <unistd.h>
 #include <fstream>
 
+#include <stdio.h>
+#include <stdlib.h>
+
+#include <sys/types.h>
+#include <sys/wait.h>
+
+#include <ctime>
+
 std::vector<std::string> splitString(std::string text, char d);
 std::string getFullPath(std::string cmd, const std::vector<std::string>& os_path_list);
 bool fileExists(std::string full_path, bool *executable);
@@ -18,11 +26,44 @@ int main (int argc, char **argv)
     char* os_path = getenv("PATH");
     std::vector<std::string> os_path_list = splitString(os_path, ':');
 
+	std::vector<std::string> history_list;
     std::cout << "Welcome to OSShell! Please enter your commands ('exit' to quit)." << std::endl;
 
-std::string fullpath = getFullPath("ls", os_path_list);
-bool *executable;
-fileExists(fullpath, executable);
+
+	std::string fullpath = getFullPath("ls", os_path_list);
+	bool *executable;
+	fileExists(fullpath, executable);
+	char * ls_args[] = { "/bin/ls" , "-a", NULL}; 
+        //execv(   ls_args[0],     ls_args);
+  pid_t c_pid, pid;
+  int status;
+
+  c_pid = fork();
+
+  if (c_pid == 0){
+    /* CHILD */
+
+    printf("Child: executing ls\n");
+
+    //execute ls                                                                                                                                                               
+    execv( ls_args[0], ls_args);
+    //only get here if exec failed                                                                                                                                             
+    perror("execve failed");
+  }else if (c_pid > 0){
+    /* PARENT */
+
+    if( (pid = wait(&status)) < 0){
+      perror("wait");
+      _exit(1);
+    }
+
+    printf("Parent: finished\n");
+
+  }else{
+    perror("fork failed");
+    _exit(1);
+  }
+
 
 
      /*pid_t pid;
@@ -41,11 +82,30 @@ fileExists(fullpath, executable);
     //  For all other commands, check if an executable by that name is in one of the PATH directories
     //   If yes, execute it
     //   If no, print error statement: "<command_name>: Error running command" (do include newline)
-
+	time_t now = time(0);
+	char *dt;
 	while(1){
     		std::cout << "osshell>";
     		std::getline(std::cin, input);
+
+		history_list.push_back(input);
+
 		if(input.compare("exit")==0){break;}
+
+
+		if(input.compare("ls")==0){
+		}
+		else if(input.compare("history")==0){
+			for(int i=0; i<history_list.size(); i++){
+				std::cout << "  " << i <<": "<< history_list[i] << std::endl;
+			}
+		}
+		else if(input.compare("date")==0){
+			dt = ctime(&now);
+			std::cout << dt;
+		}else{
+			std::cout << input << ": Error running command" << std::endl;
+		}
 	}
 
 	std::cout << input << std::endl;
@@ -62,9 +122,9 @@ std::vector<std::string> splitString(std::string text, char d)
 	while(std::getline(tokenStream, token, d)){
 		result.push_back(token);
 	}
-	/*for(int i=0; i<result.size(); i++){
+	for(int i=0; i<result.size(); i++){
 	std::cout << result[i] << std::endl;
-	}*/
+	}
 
     return result;
 }
@@ -92,7 +152,7 @@ std::string getFullPath(std::string cmd, const std::vector<std::string>& os_path
     		while ((dirp = readdir(dp)) != NULL){
 			std::string fname = dirp->d_name;
 			if( fname.find(cmd) !=  std::string::npos){
-				std::cout << os_path_list[i] << "/"<<fname << "/"<< cmd << std::endl;
+				std::cout << os_path_list[i] << "/"<< fname << "/"<< cmd << std::endl;
 				return os_path_list[i] + "/" + fname + "/" + cmd;
 			}
     		}
