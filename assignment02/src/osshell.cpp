@@ -30,10 +30,12 @@ int main (int argc, char **argv)
     std::cout << "Welcome to OSShell! Please enter your commands ('exit' to quit)." << std::endl;
 
 
-	std::string fullpath = getFullPath("ls", os_path_list);
+	std::string fullpath;// = getFullPath("ls", os_path_list);
 	bool *executable;
+
 	fileExists(fullpath, executable);
-	char * ls_args[] = { "/bin/ls" , "-a", NULL}; 
+
+	char * ls_args[] = { *fullpath , "-a", NULL};
         //execv(   ls_args[0],     ls_args);
   pid_t c_pid, pid;
   int status;
@@ -46,7 +48,7 @@ int main (int argc, char **argv)
     printf("Child: executing ls\n");
 
     //execute ls                                                                                                                                                               
-    execv( ls_args[0], ls_args);
+    execv( ls_args[0], ls_args );
     //only get here if exec failed                                                                                                                                             
     perror("execve failed");
   }else if (c_pid > 0){
@@ -92,10 +94,17 @@ int main (int argc, char **argv)
 
 		if(input.compare("exit")==0){break;}
 
+		fullpath = getFullPath(input, os_path_list);
+		fileExists(fullpath, executable);
+		
+		if( fileExists(fullpath, executable) && *executable==1 ){
+			execv( ls_args[0], ls_args );
+		}
 
 		if(input.compare("ls")==0){
+			
 		}
-		else if(input.compare("history")==0){
+		else if(input.compare("history")==0){//save it to a file.
 			for(int i=0; i<history_list.size(); i++){
 				std::cout << "  " << i <<": "<< history_list[i] << std::endl;
 			}
@@ -123,7 +132,7 @@ std::vector<std::string> splitString(std::string text, char d)
 		result.push_back(token);
 	}
 	for(int i=0; i<result.size(); i++){
-	std::cout << result[i] << std::endl;
+	//std::cout << result[i] << std::endl;
 	}
 
     return result;
@@ -138,7 +147,6 @@ std::string getFullPath(std::string cmd, const std::vector<std::string>& os_path
     DIR *dp;
     struct dirent *dirp;
 
-
       //files.push_back(string(dirp->d_name));
     //closedir(dp);
 
@@ -149,11 +157,13 @@ std::string getFullPath(std::string cmd, const std::vector<std::string>& os_path
       		std::cout << "Error(" << errno << ") opening " << cmd << std::endl;
       		//return errno;
     		}
+		//std::cout << os_path_list[i] << " aa" << std::endl;
     		while ((dirp = readdir(dp)) != NULL){
 			std::string fname = dirp->d_name;
-			if( fname.find(cmd) !=  std::string::npos){
+			//std::cout << os_path_list[i] << "	" << fname << std::endl;
+			if( fname.compare(cmd)==0 ){
 				std::cout << os_path_list[i] << "/"<< fname << "/"<< cmd << std::endl;
-				return os_path_list[i] + "/" + fname + "/" + cmd;
+				return os_path_list[i] + "/" + fname ;
 			}
     		}
 	}
@@ -168,7 +178,8 @@ bool fileExists(std::string full_path, bool *executable)
     std::ifstream f(full_path);
 	std::cout << full_path << std::endl;
 	if(f.good()){
-		*executable = true;
+		
+		if( !access(&full_path[0], X_OK) ){ *executable = true; }
 		return true;
 	}else{
 		return false;
