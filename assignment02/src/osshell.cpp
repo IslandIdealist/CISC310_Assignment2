@@ -1,6 +1,7 @@
 #include <iostream>
 #include <cstdlib>
 #include <string>
+#include <cstring>
 #include <vector>
 #include <sstream>
 #include <dirent.h>
@@ -22,60 +23,21 @@ bool fileExists(std::string full_path, bool *executable);
 
 int main (int argc, char **argv)
 {
-    std::string input;
-    char* os_path = getenv("PATH");
-    std::vector<std::string> os_path_list = splitString(os_path, ':');
+    	char* os_path = getenv("PATH");
+    	std::vector<std::string> os_path_list = splitString(os_path, ':');
+	std::cout << "Welcome to OSShell! Please enter your commands ('exit' to quit)." << std::endl;
+	bool executable;
+	std::string input;
+	std::string fullpath;
 
 	std::vector<std::string> history_list;
-    std::cout << "Welcome to OSShell! Please enter your commands ('exit' to quit)." << std::endl;
+	std::vector<std::string> spliter;
+	std::vector<char*> args;
 
-
-	std::string fullpath;// = getFullPath("ls", os_path_list);
-	bool *executable;
-
-	fileExists(fullpath, executable);
-
-	char * ls_args[] = { *fullpath , "-a", NULL};
-        //execv(   ls_args[0],     ls_args);
-  pid_t c_pid, pid;
-  int status;
-
-  c_pid = fork();
-
-  if (c_pid == 0){
-    /* CHILD */
-
-    printf("Child: executing ls\n");
-
-    //execute ls                                                                                                                                                               
-    execv( ls_args[0], ls_args );
-    //only get here if exec failed                                                                                                                                             
-    perror("execve failed");
-  }else if (c_pid > 0){
-    /* PARENT */
-
-    if( (pid = wait(&status)) < 0){
-      perror("wait");
-      _exit(1);
-    }
-
-    printf("Parent: finished\n");
-
-  }else{
-    perror("fork failed");
-    _exit(1);
-  }
-
-
-
-     /*pid_t pid;
-     char *const arr[] = {"ls", "-l", "-R","-a", NULL};
-	execv("ls", arr);*/
-
-	/*char *bin_path = "ls";
-	char *args[]={bin_path,"-a", "-s",NULL};
-        execv(bin_path,args);*/
-
+	time_t now = time(0);
+	char *dt;
+  	pid_t c_pid, pid;
+  	int status;
     // Repeat:
     //  Print prompt for user input: "osshell> " (no newline)
     //  Get user input for next command
@@ -84,41 +46,61 @@ int main (int argc, char **argv)
     //  For all other commands, check if an executable by that name is in one of the PATH directories
     //   If yes, execute it
     //   If no, print error statement: "<command_name>: Error running command" (do include newline)
-	time_t now = time(0);
-	char *dt;
-	while(1){
-    		std::cout << "osshell>";
+	while( 1 ){
+
+		std::cout << "osshell>";
     		std::getline(std::cin, input);
+		std::cin.clear();
+		args.clear();
+		if(input.compare("exit")==0){ break; }
 
-		history_list.push_back(input);
+		spliter = splitString(input, ' ');
 
-		if(input.compare("exit")==0){break;}
-
-		fullpath = getFullPath(input, os_path_list);
-		fileExists(fullpath, executable);
-		
-		if( fileExists(fullpath, executable) && *executable==1 ){
-			execv( ls_args[0], ls_args );
-		}
-
-		if(input.compare("ls")==0){
-			
-		}
-		else if(input.compare("history")==0){//save it to a file.
-			for(int i=0; i<history_list.size(); i++){
-				std::cout << "  " << i <<": "<< history_list[i] << std::endl;
+		for(int i=0; i<spliter.size(); i++){
+			if(i==0){
+   			  	size_t found = spliter[i].find_last_of("/\\");
+  			  	std::string path = spliter[i].substr(found+1); // check that is OK
+				fullpath = getFullPath(path, os_path_list);
+				args.push_back( const_cast<char*>(fullpath.c_str()) );
+			}else{
+				args.push_back( const_cast<char*>(spliter[i].c_str()) );
 			}
 		}
-		else if(input.compare("date")==0){
-			dt = ctime(&now);
-			std::cout << dt;
+		args.push_back(0);
+		history_list.push_back(input);
+	
+		if(  fileExists(fullpath, &executable) && executable ){
+			c_pid = fork();
+  			if (c_pid == 0){
+    			/* CHILD */
+			//printf("Child: executing ls\n");
+    			//execute     
+                                                                                                       
+			execv(args[0], &args.front());
+    			//only get here if exec failed
+                       
+    			perror("<command_name>: Error running command");
+  			}else if (c_pid > 0){
+    			/* PARENT */
+    			if( (pid = wait(&status)) < 0){
+				//getpid();
+      			perror("wait");
+      			_exit(1);
+    			}
+    			//printf("Parent: finished\n");
+  			}else{
+    			perror("fork failed");
+    			_exit(1);
+  			}
+
 		}else{
 			std::cout << input << ": Error running command" << std::endl;
 		}
+		std::cin.clear();
+		fullpath.clear();
+		input.clear();
 	}
-
-	std::cout << input << std::endl;
-	std::cout << os_path << std::endl;
+	
     return 0;
 }
 
@@ -131,42 +113,30 @@ std::vector<std::string> splitString(std::string text, char d)
 	while(std::getline(tokenStream, token, d)){
 		result.push_back(token);
 	}
-	for(int i=0; i<result.size(); i++){
-	//std::cout << result[i] << std::endl;
-	}
-
     return result;
 }
 
 // Returns a string for the full path of a command if it is found in PATH, otherwise simply return ""
 std::string getFullPath(std::string cmd, const std::vector<std::string>& os_path_list)
 {
-
-	//std::string last_element(cmd.substr(cmd.rfind("/") + 1));
-	//std::cout << last_element << "   HERE " << std::endl;
-    DIR *dp;
-    struct dirent *dirp;
-
-      //files.push_back(string(dirp->d_name));
-    //closedir(dp);
-
+    	DIR *dp;
+    	struct dirent *dirp;
+	std::string fname;
 	for(int i=0; i<os_path_list.size(); i++){
-		
 	    	if((dp = opendir(os_path_list[i].c_str())) == NULL)
     		{
-      		std::cout << "Error(" << errno << ") opening " << cmd << std::endl;
+      		//std::cout << "Error(" << errno << ") opening " << cmd << std::endl;
       		//return errno;
     		}
-		//std::cout << os_path_list[i] << " aa" << std::endl;
     		while ((dirp = readdir(dp)) != NULL){
-			std::string fname = dirp->d_name;
-			//std::cout << os_path_list[i] << "	" << fname << std::endl;
+			fname = dirp->d_name;
 			if( fname.compare(cmd)==0 ){
-				std::cout << os_path_list[i] << "/"<< fname << "/"<< cmd << std::endl;
 				return os_path_list[i] + "/" + fname ;
 			}
+			fname.clear();
     		}
 	}
+	closedir(dp);
     return "";
 }
 
@@ -174,14 +144,13 @@ std::string getFullPath(std::string cmd, const std::vector<std::string>& os_path
 // depending on if the user has permission to execute the file
 bool fileExists(std::string full_path, bool *executable)
 {
-    *executable = false;
-    std::ifstream f(full_path);
-	std::cout << full_path << std::endl;
+    	*executable = false;
+    	std::ifstream f(full_path);
 	if(f.good()){
-		
 		if( !access(&full_path[0], X_OK) ){ *executable = true; }
 		return true;
 	}else{
 		return false;
 	}
+	return false;
 }
