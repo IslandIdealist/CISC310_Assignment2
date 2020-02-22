@@ -1,20 +1,13 @@
 #include <iostream>
-#include <cstdlib>
+
 #include <string>
-#include <cstring>
 #include <vector>
 #include <sstream>
 #include <dirent.h>
-#include <sys/stat.h>
 #include <unistd.h>
 #include <fstream>
 
-#include <stdio.h>
-#include <stdlib.h>
-
-#include <sys/types.h>
 #include <sys/wait.h>
-
 #include <ctime>
 
 std::vector<std::string> splitString(std::string text, char d);
@@ -23,9 +16,26 @@ bool fileExists(std::string full_path, bool *executable);
 
 int main (int argc, char **argv)
 {
+	std::ifstream read;
+	std::ofstream write;
+	if( argv[1]!=NULL ){
+		std::string charactersFilename(argv[1]);
+		read.open (charactersFilename, std::ifstream::in);
+	}
+	if( argv[2]!=NULL ){
+		std::string charactersFilename2(argv[2]);
+		if(charactersFilename2.compare("CLUTTER_IM_MODULE=xim")!=0){
+		write.open( charactersFilename2.c_str() , std::ofstream::out | std::ofstream::trunc );}
+	}
+	if ( (read.is_open()&&!write.is_open())  ||  (!read.is_open()&&write.is_open()) ){ _exit(1); }
+
     	char* os_path = getenv("PATH");
     	std::vector<std::string> os_path_list = splitString(os_path, ':');
-	std::cout << "Welcome to OSShell! Please enter your commands ('exit' to quit)." << std::endl;
+	
+  	if ( read.is_open() && write.is_open() ){ 
+		write << "Welcome to OSShell! Please enter your commands ('exit' to quit)." << std::endl; 
+	}else{ std::cout << "Welcome to OSShell! Please enter your commands ('exit' to quit)." << std::endl; }
+
 	bool executable;
 	std::string input;
 	std::string fullpath;
@@ -48,8 +58,10 @@ int main (int argc, char **argv)
     //   If no, print error statement: "<command_name>: Error running command" (do include newline)
 	while( 1 ){
 
-		std::cout << "osshell>";
-    		std::getline(std::cin, input);
+  		if ( read.is_open() && write.is_open() ){ 
+			write << "osshell> "; std::getline(read, input);
+		}else{ std::cout << "osshell> "; std::getline(std::cin, input); }
+
 		std::cin.clear();
 		args.clear();
 		if(input.compare("exit")==0){ break; }
@@ -68,46 +80,47 @@ int main (int argc, char **argv)
 		}
 		args.push_back(0);
 		history_list.push_back(input);
-	
+
 		if(  fileExists(fullpath, &executable) && executable ){
 			c_pid = fork();
   			if (c_pid == 0){
     			/* CHILD */
 			//printf("Child: executing ls\n");
-    			//execute     
-                                                                                                       
-			execv(args[0], &args.front());
+    			//execute
+  			if ( read.is_open() && write.is_open() ){
+ 				write << execv(args[0], &args.front());
+			}else{
+				execv(args[0], &args.front());
+			}
     			//only get here if exec failed
-                       
-    			perror("<command_name>: Error running command");
+    				perror("<command_name>: Error running command");
   			}else if (c_pid > 0){
     			/* PARENT */
     			if( (pid = wait(&status)) < 0){
 				//getpid();
-      			perror("wait");
-      			_exit(1);
+      				perror("wait");
+      				_exit(1);
     			}
     			//printf("Parent: finished\n");
   			}else{
-    			perror("fork failed");
-    			_exit(1);
+    				perror("fork failed");
+    				_exit(1);
   			}
-
-		}else{
+		}else if(input.compare("")!=0){
 			std::cout << input << ": Error running command" << std::endl;
 		}
 		std::cin.clear();
 		fullpath.clear();
 		input.clear();
 	}
-	
+  	if ( read.is_open() && write.is_open() ){ read.close(); write.close(); }
     return 0;
 }
 
 // Returns vector of strings created by splitting `text` on every occurance of `d`
 std::vector<std::string> splitString(std::string text, char d)
 {
-    std::vector<std::string> result;
+    	std::vector<std::string> result;
 	std::string token;
 	std::stringstream tokenStream(text);
 	while(std::getline(tokenStream, token, d)){
@@ -123,11 +136,7 @@ std::string getFullPath(std::string cmd, const std::vector<std::string>& os_path
     	struct dirent *dirp;
 	std::string fname;
 	for(int i=0; i<os_path_list.size(); i++){
-	    	if((dp = opendir(os_path_list[i].c_str())) == NULL)
-    		{
-      		//std::cout << "Error(" << errno << ") opening " << cmd << std::endl;
-      		//return errno;
-    		}
+	    	if((dp = opendir(os_path_list[i].c_str())) == NULL){}
     		while ((dirp = readdir(dp)) != NULL){
 			fname = dirp->d_name;
 			if( fname.compare(cmd)==0 ){
