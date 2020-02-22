@@ -9,6 +9,7 @@
 
 #include <sys/wait.h>
 #include <ctime>
+#include <regex>
 
 std::vector<std::string> splitString(std::string text, char d);
 std::string getFullPath(std::string cmd, const std::vector<std::string>& os_path_list);
@@ -48,6 +49,23 @@ int main (int argc, char **argv)
 	char *dt;
   	pid_t c_pid, pid;
   	int status;
+
+	std::fstream file;
+	file.open("./bin/History.txt", std::ios::out | std::ios::app);
+	file.close();
+	file.open("./bin/History.txt", std::ios::in | std::ios::out | std::ios::app);
+
+	std::string str;
+
+	while(std::getline(file, str))
+	{
+		if(str.size() > 0)
+		{
+			history_list.push_back(str);
+		}
+	}
+	file.close();
+
     // Repeat:
     //  Print prompt for user input: "osshell> " (no newline)
     //  Get user input for next command
@@ -56,6 +74,7 @@ int main (int argc, char **argv)
     //  For all other commands, check if an executable by that name is in one of the PATH directories
     //   If yes, execute it
     //   If no, print error statement: "<command_name>: Error running command" (do include newline)
+
 	while( 1 ){
 
   		if ( read.is_open() && write.is_open() ){ 
@@ -64,9 +83,32 @@ int main (int argc, char **argv)
 
 		std::cin.clear();
 		args.clear();
-		if(input.compare("exit")==0){ break; }
 
 		spliter = splitString(input, ' ');
+
+		if(history_list.size() > 127)
+		{
+			history_list.push_back(input);
+			history_list.erase(history_list.begin());			
+		}
+		else
+		{
+			history_list.push_back(input);
+			
+		}
+
+		if(input.compare("exit")==0)
+		{ 
+			file.open("./bin/History.txt", std::ios::out);
+			for(int i = 0; i < history_list.size(); i++)
+				{
+					file << history_list[i] << std::endl;
+				}
+			file.close();			
+			break; 
+		}
+		
+		bool numCheck;
 
 		for(int i=0; i<spliter.size(); i++){
 			if(i==0){
@@ -79,7 +121,6 @@ int main (int argc, char **argv)
 			}
 		}
 		args.push_back(0);
-		history_list.push_back(input);
 
 		if(  fileExists(fullpath, &executable) && executable ){
 			c_pid = fork();
@@ -106,7 +147,59 @@ int main (int argc, char **argv)
     				perror("fork failed");
     				_exit(1);
   			}
-		}else if(input.compare("")!=0){
+		}
+		else if((spliter.size() < 3) && (spliter[0].compare("history") == 0))
+		{
+			if(spliter.size() > 1)
+			{
+				numCheck = std::regex_match(spliter[1], std::regex("[0-9]+"));
+			}
+			if((numCheck == 0) && (spliter.size() > 1))
+			{
+				if(spliter[1].compare("clear")==0)
+				{
+					history_list.clear();
+					file.open("./bin/History.txt", std::ios::trunc);					
+					file.close();				
+				}
+			}
+			else if((numCheck == 1) || (spliter.size() == 1))
+			{
+				if(spliter.size() != 1)
+				{
+					int startIndex = history_list.size()-std::stoi(spliter[1]);
+					int maxIndex = std::stoi(spliter[1]);
+					if(std::stoi(spliter[1]) < history_list.size())	
+					{
+						for(int i=startIndex; i<history_list.size(); i++)
+						{
+							std::cout << "  " << i <<": "<< history_list[i] << std::endl;
+						}
+					}
+					else
+					{
+						for(int i=0; i<history_list.size(); i++)
+						{
+							std::cout << "  " << i <<": "<< history_list[i] << std::endl;
+						}
+					}				
+				}
+				else
+				{
+					for(int i=0; i<history_list.size(); i++)
+					{
+						std::cout << "  " << i <<": "<< history_list[i] << std::endl;
+					}	
+				}	
+			
+			}
+			else
+			{
+				std::cout << input << ": Error running command" << std::endl;
+			}
+		}
+		else if(input.compare("")!=0)
+		{
 			std::cout << input << ": Error running command" << std::endl;
 		}
 		std::cin.clear();
