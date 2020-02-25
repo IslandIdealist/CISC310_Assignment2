@@ -17,7 +17,7 @@ bool fileExists(std::string full_path, bool *executable);
 
 int main (int argc, char **argv)
 {
-	std::ifstream read;
+	/*std::ifstream read;
 	std::ofstream write;
 	if( argv[1]!=NULL ){
 		std::string charactersFilename(argv[1]);
@@ -27,15 +27,17 @@ int main (int argc, char **argv)
 		std::string charactersFilename2(argv[2]);
 		if(charactersFilename2.compare("CLUTTER_IM_MODULE=xim")!=0){
 		write.open( charactersFilename2.c_str() , std::ofstream::out | std::ofstream::trunc );}
-	}
-	if ( (read.is_open()&&!write.is_open())  ||  (!read.is_open()&&write.is_open()) ){ _exit(1); }
+	}*/
+	/*if ( (read.is_open()&&!write.is_open())  ||  (!read.is_open()&&write.is_open()) ){ _exit(1); }*/
 
     	char* os_path = getenv("PATH");
     	std::vector<std::string> os_path_list = splitString(os_path, ':');
 	
-  	if ( read.is_open() && write.is_open() ){ 
-		write << "Welcome to OSShell! Please enter your commands ('exit' to quit)." << std::endl; 
-	}else{ std::cout << "Welcome to OSShell! Please enter your commands ('exit' to quit)." << std::endl; }
+  	/*if ( read.is_open() && write.is_open() ){ 
+		write << "Welcome to OSShell! Please enter your commands ('exit' to quit)." << std::endl;
+		std::cout << "Welcome to OSShell! Please enter your commands ('exit' to quit)." << std::endl;
+	}else{ std::cout << "Welcome to OSShell! Please enter your commands ('exit' to quit)." << std::endl; }*/
+	std::cout << "Welcome to OSShell! Please enter your commands ('exit' to quit)." << std::endl;
 
 	bool executable;
 	bool numCheck;
@@ -80,9 +82,11 @@ int main (int argc, char **argv)
 	
 	while( 1 ){
 
-  		if ( read.is_open() && write.is_open() ){ 
+  		/*if ( read.is_open() && write.is_open() ){ 
 			write << "osshell> "; std::getline(read, input);
-		}else{ std::cout << "osshell> "; std::getline(std::cin, input); }
+			std::cout << "osshell> "; std::getline(read, input);
+		}else{ std::cout << "osshell> "; std::getline(std::cin, input); }*/
+		std::cout << "osshell> "; std::getline(std::cin, input);
 
 		std::cin.clear();
 		args.clear();
@@ -108,7 +112,7 @@ int main (int argc, char **argv)
 					file << history_list[i] << std::endl;
 				}
 			file.close();
-			break; 
+			break;
 		}
 		for(int i=0; i<spliter.size(); i++){
 			if(i==0){
@@ -129,12 +133,13 @@ int main (int argc, char **argv)
     			/* CHILD */
 			//printf("Child: executing ls\n");
     			//execute
-  			if ( read.is_open() && write.is_open() ){
+  			/*if ( read.is_open() && write.is_open() ){
 
  				execv(args[0], &args.front());
 			}else{
 				execv(args[0], &args.front());
-			}
+			}*/
+			execv(args[0], &args.front());
 			
     			//only get here if exec failed
     				perror("<command_name>: Error running command");
@@ -209,7 +214,7 @@ int main (int argc, char **argv)
 		std::cin.clear();
 		input.clear();
 	}
-  	if ( read.is_open() && write.is_open() ){ read.close(); write.close(); }
+  	/*if ( read.is_open() && write.is_open() ){ read.close(); write.close(); }*/
     return 0;
 }
 
