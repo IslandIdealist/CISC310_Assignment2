@@ -161,7 +161,7 @@ int main (int argc, char **argv)
 		{
 			if(spliter.size() > 1)
 			{
-				numCheck = std::regex_match(spliter[1], std::regex("[0-9]+"));
+				numCheck = std::regex_match(spliter[1], std::regex("^-?[0-9]+"));
 			}
 			if((numCheck == 0) && (spliter.size() > 1))
 			{
@@ -171,27 +171,47 @@ int main (int argc, char **argv)
 					file.open("./bin/History.txt", std::ios::trunc);					
 					file.close();				
 				}
+				else
+				{
+					std::cout << "Error: history expects an integer > 0 (or 'clear')" << std::endl;
+				}
 			}
-			else if((numCheck == 1) || (spliter.size() == 1))
+			else if( (numCheck == 1) || (spliter.size() >= 1) )
 			{
 				if(spliter.size() != 1)
 				{
-					int startIndex = history_list.size()-std::stoi(spliter[1]);
-					int maxIndex = std::stoi(spliter[1]);
-					if(std::stoi(spliter[1]) < history_list.size())	
+					if( numCheck != 0 )
 					{
-						for(int i=startIndex; i<history_list.size(); i++)
-						{
-							std::cout << "  " << i <<": "<< history_list[i] << std::endl;
+						if( std::stoi(spliter[1]) > 0 )
+						{					
+							int startIndex = history_list.size()-std::stoi(spliter[1]);
+							int maxIndex = std::stoi(spliter[1]);
+							if(std::stoi(spliter[1]) < history_list.size())	
+							{
+								for(int i=startIndex; i<history_list.size(); i++)
+								{
+									std::cout << "  " << i <<": "<< history_list[i] << std::endl;
+								}
+							}
+							else
+							{
+								for(int i=0; i<history_list.size(); i++)
+								{
+									std::cout << "  " << i << ": " << history_list[i] << std::endl;
+								}
+							}				
 						}
+						else
+						{
+							std::cout << "Error: history expects an integer > 0 (or 'clear')" << std::endl;
+						}
+											
 					}
 					else
 					{
-						for(int i=0; i<history_list.size(); i++)
-						{
-							std::cout << "  " << i <<": "<< history_list[i] << std::endl;
-						}
-					}				
+						std::cout << "Error: history expects an integer > 0 (or 'clear')" << std::endl;
+					}
+								
 				}
 				else
 				{
