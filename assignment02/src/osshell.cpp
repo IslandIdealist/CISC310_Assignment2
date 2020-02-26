@@ -121,6 +121,9 @@ int main (int argc, char **argv)
 				fullpath = getFullPath(path, os_path_list);
 				args.push_back( const_cast<char*>(fullpath.c_str()) );
 			}else{
+				if(spliter[i].front()=='"' && spliter[i].back()=='"'){  
+					spliter[i] = spliter[i].substr(1, spliter[i].size()-2);
+				}
 				args.push_back( const_cast<char*>(spliter[i].c_str()) );
 			}
 		}
@@ -142,18 +145,18 @@ int main (int argc, char **argv)
 			execv(args[0], &args.front());
 			
     			//only get here if exec failed
-    				perror("<command_name>: Error running command");
+    				//perror("<command_name>: Error running command");
   			}else if (c_pid > 0){
     			/* PARENT */
     			if( (pid = wait(&status)) < 0){
 				//getpid();
 
-      				perror("wait");
+      				//perror("wait");
       				_exit(1);
     			}
     			//printf("Parent: finished\n");
   			}else{
-    				perror("fork failed");
+    				//perror("fork failed");
     				_exit(1);
   			}
 		}
