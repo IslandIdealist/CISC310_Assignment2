@@ -79,7 +79,7 @@ int main (int argc, char **argv)
     //  For all other commands, check if an executable by that name is in one of the PATH directories
     //   If yes, execute it
     //   If no, print error statement: "<command_name>: Error running command" (do include newline)
-	
+
 	while( 1 ){
 
   		/*if ( read.is_open() && write.is_open() ){ 
@@ -103,7 +103,6 @@ int main (int argc, char **argv)
 			history_list.push_back(input);
 			
 		}
-
 		if(input.compare("exit")==0)
 		{ 
 			file.open("./bin/History.txt", std::ios::out);
@@ -114,6 +113,7 @@ int main (int argc, char **argv)
 			file.close();
 			break;
 		}
+		
 		for(int i=0; i<spliter.size(); i++){
 			if(i==0){
    			  	found = spliter[i].find_last_of("/\\");
@@ -187,20 +187,20 @@ int main (int argc, char **argv)
 					{
 						if( std::stoi(spliter[1]) > 0 )
 						{					
-							int startIndex = history_list.size()-std::stoi(spliter[1]);
+							int startIndex = (history_list.size()-1)-std::stoi(spliter[1]);
 							int maxIndex = std::stoi(spliter[1]);
-							if(std::stoi(spliter[1]) < history_list.size())	
+							if(std::stoi(spliter[1]) < (history_list.size()-1))	
 							{
-								for(int i=startIndex; i<history_list.size(); i++)
+								for(int i=startIndex; i<history_list.size()-1; i++)
 								{
-									std::cout << "  " << i <<": "<< history_list[i] << std::endl;
+									std::cout << "  " << (i+1) <<": "<< history_list[i] << std::endl;
 								}
 							}
 							else
 							{
-								for(int i=0; i<history_list.size(); i++)
+								for(int i=0; i<history_list.size()-1; i++)
 								{
-									std::cout << "  " << i << ": " << history_list[i] << std::endl;
+									std::cout << "  " << (i+1) << ": " << history_list[i] << std::endl;
 								}
 							}				
 						}
@@ -218,9 +218,9 @@ int main (int argc, char **argv)
 				}
 				else
 				{
-					for(int i=0; i<history_list.size(); i++)
+					for(int i=0; i<history_list.size()-1; i++)
 					{
-						std::cout << "  " << i <<": "<< history_list[i] << std::endl;
+						std::cout << "  " << (i+1) <<": "<< history_list[i] << std::endl;
 					}	
 				}	
 			
